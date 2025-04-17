@@ -9,6 +9,7 @@ This repository includes all the following aspects of the project:
 - A UI interface to upload photos for the testing set
 
 ##Setup 
+
 Clone the repository
 ```
 git clone https://github.com/billy-estrada/asl-cnn.git

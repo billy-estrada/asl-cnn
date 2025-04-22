@@ -33,6 +33,8 @@ train_generator = train_datagen.flow_from_directory(
     subset='training'
 )
 
+print(train_generator.class_indices)  # Print class indices for reference
+
 val_generator = train_datagen.flow_from_directory(
     DATASET_PATH,
     target_size=(IMG_SIZE, IMG_SIZE),

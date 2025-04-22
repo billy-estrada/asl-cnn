@@ -4,8 +4,11 @@ from flask import Flask, request, jsonify
 from PIL import Image
 import cv2
 import json
+from flask_cors import CORS
 
 app = Flask(__name__, static_folder='static')
+
+CORS(app)
 
 IMG_SIZE = 64
 MODEL_PATH = 'asl_model.h5'
@@ -18,7 +21,7 @@ def hello():
 
 @app.route("/predict", methods=["POST"])
 def predict():
-    with open("class_indices.json", "r") as f:
+    with open("class_labels.json", "r") as f:
         class_indices = json.load(f)
     file = request.files['image']
     image = Image.open(file.stream)
@@ -26,9 +29,14 @@ def predict():
 
     prediction = model.predict(processed_image)
     predicted_index = np.argmax(prediction)
+    print(class_indices)
     class_labels = {v: k for k, v in class_indices.items()}
-    class_labels_inv = {v: k for k, v in class_labels.items()}
-    predicted_letter = class_labels_inv[predicted_index]
+    print("Predicted index:", predicted_index)
+    print("class_labels_inv keys:", list(class_labels.keys()))
+    print("class_labels_inv items:", list(class_labels.values()))
+    
+    predicted_letter = class_labels[int(predicted_index)]
+    print("predicted letter", predicted_letter)
 
     return jsonify({'letter': predicted_letter})
 

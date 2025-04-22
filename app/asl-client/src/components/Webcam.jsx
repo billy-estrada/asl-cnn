@@ -28,7 +28,6 @@ function WebCam() {
 
   const capture = React.useCallback(async () => {
     const imageSrc = webcamRef.current.getScreenshot();
-    console.log(imageSrc);
 
     if (!imageSrc) {
       setError("No image captured. Please try again.");

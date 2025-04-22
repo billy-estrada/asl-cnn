@@ -5,3 +5,5 @@ tensorflow
 keras
 scikit-learn
 opencv-python
+flask
+flask-cors

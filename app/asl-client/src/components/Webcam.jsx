@@ -34,6 +34,12 @@ function WebCam() {
     }
 
     setError(null);
+    const link = document.createElement("a");
+    link.href = imageSrc;
+    const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+    link.download = `capture_${timestamp}.jpg`; // You can customize the filename
+    link.click();
+
 
     const letter = await sendImageToServer(imageSrc);
     if (letter) {

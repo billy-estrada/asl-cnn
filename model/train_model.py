@@ -17,6 +17,7 @@ MODEL_PATH = 'models/asl_model.h5'
 
 def sobel_preprocessing(img):
     img = img.astype(np.uint8)  
+    print(img.shape)
 
     sobelx = cv2.Sobel(img, cv2.CV_64F, 1, 0, ksize=3)
     sobely = cv2.Sobel(img, cv2.CV_64F, 0, 1, ksize=3)
@@ -65,8 +66,8 @@ images, labels = next(train_generator)
 
 # Plot the first 8 images
 plt.figure(figsize=(12, 6))
-for i in range(8):
-    plt.subplot(2, 4, i + 1)
+for i in range(30):
+    plt.subplot(5, 6, i + 1)
     plt.imshow(images[i].squeeze(), cmap='gray')  # Remove the (1) channel dimension for display
     plt.axis('off')
 plt.suptitle('Sobel + Augmented Images from Generator')

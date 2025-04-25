@@ -41,9 +41,10 @@ def predict():
 
     # Preprocess image for model
     processed_image = preprocess_image(image_bgr)
+    processed_image = np.expand_dims(processed_image, axis=0)  # shape: (1, 64, 64, 1)
 
     # Optional: Save processed image for debugging
-    processed_image_to_save = Image.fromarray((processed_image[0, :, :, 0] * 255).astype(np.uint8))
+    processed_image_to_save = Image.fromarray((processed_image[0, :, :, 0] * 255).astype(np.uint8))    
     processed_path = os.path.join("./", f"processed_{timestamp}.jpg")
     processed_image_to_save.save(processed_path)
 
@@ -79,26 +80,27 @@ def preprocess_image(image):
     y2 = min(h, cy + half)
 
     roi = image[y1:y2, x1:x2]
-
     # Pad to 300x300 if ROI is smaller
 
 
     # Convert to grayscale
     roi_gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
+    roi_resized = cv2.resize(roi_gray, (64, 64))   
+
+    roi_resized = roi_resized.astype(np.uint8)  
+
     
-    sobelx = cv2.Sobel(roi_gray, cv2.CV_64F, 1, 0, ksize=3) # Sobel along x-axis
-    sobely = cv2.Sobel(roi_gray, cv2.CV_64F, 0, 1, ksize=3) # Sobel along y-axis
+    sobelx = cv2.Sobel(roi_resized, cv2.CV_64F, 1, 0, ksize=3) # Sobel along x-axis
+    sobely = cv2.Sobel(roi_resized, cv2.CV_64F, 0, 1, ksize=3) # Sobel along y-axis
 
     magnitude = np.sqrt(sobelx**2 + sobely**2)
     magnitude = cv2.convertScaleAbs(magnitude)  
     # Resize to model input
-    roi_resized = cv2.resize(magnitude, (IMG_SIZE, IMG_SIZE))
 
     # Normalize and reshape
-    normalized = roi_resized.astype("float32") / 255.0
-    reshaped = normalized.reshape(1, IMG_SIZE, IMG_SIZE, 1)
-
-    return reshaped
+    magnitude = magnitude.astype("float32") / 255.0
+    
+    return np.expand_dims(magnitude, axis=-1)  # Adds the channel dimension
 
 
 if __name__ == "__main__":

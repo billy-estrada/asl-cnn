@@ -6,23 +6,37 @@ from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense, Dropout
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
+import cv2
 
 # Configuration
 IMG_SIZE = 64
 BATCH_SIZE = 32
-EPOCHS = 10
+EPOCHS = 15
 DATASET_PATH = '../dataset'
 MODEL_PATH = 'models/asl_model.h5'
 
+def sobel_preprocessing(img):
+    img = img.astype(np.uint8)  
+
+    sobelx = cv2.Sobel(img, cv2.CV_64F, 1, 0, ksize=3)
+    sobely = cv2.Sobel(img, cv2.CV_64F, 0, 1, ksize=3)
+    magnitude = np.sqrt(sobelx**2 + sobely**2)
+    magnitude = cv2.convertScaleAbs(magnitude)
+
+    magnitude = magnitude.astype("float32") / 255.0  # Scale back to 0-1
+
+    return np.expand_dims(magnitude, axis=-1)  # Adds the channel dimension
+
 # 1. Data Loading with ImageDataGenerator
 train_datagen = ImageDataGenerator(
-    rescale=1./255,
-    validation_split=0.2,     # 80% train, 20% val
-    rotation_range=10,
+    validation_split=0.2,
+    rotation_range=15,
     width_shift_range=0.1,
     height_shift_range=0.1,
-    zoom_range=0.1
+    zoom_range=0.1,
+    preprocessing_function=sobel_preprocessing,
 )
+
 
 train_generator = train_datagen.flow_from_directory(
     DATASET_PATH,
@@ -43,6 +57,20 @@ val_generator = train_datagen.flow_from_directory(
     class_mode='categorical',
     subset='validation'
 )
+
+import matplotlib.pyplot as plt
+
+# Get one batch from the training generator
+images, labels = next(train_generator)
+
+# Plot the first 8 images
+plt.figure(figsize=(12, 6))
+for i in range(8):
+    plt.subplot(2, 4, i + 1)
+    plt.imshow(images[i].squeeze(), cmap='gray')  # Remove the (1) channel dimension for display
+    plt.axis('off')
+plt.suptitle('Sobel + Augmented Images from Generator')
+plt.show()
 
 # 2. Build the CNN Model
 model = Sequential([

@@ -11,7 +11,7 @@ from flask_cors import CORS
 app = Flask(__name__, static_folder='static')
 CORS(app)
 
-MODEL_PATH = 'asl_model.h5'
+MODEL_PATH = 'asl_model_v03.h5'
 IMG_SIZE = 64
 
 # Load your trained model
@@ -29,17 +29,18 @@ def predict():
 
     # Receive image from client
     file = request.files['image']
-    image = Image.open(file.stream)
+    file_bytes = np.frombuffer(file.read(), np.uint8)
+    image_bgr = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
 
     # Timestamp for file names
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
     # Save raw uploaded image
     raw_image_path = os.path.join("./", f"raw_{timestamp}.jpg")
-    image.save(raw_image_path)
+    cv2.imwrite(raw_image_path, image_bgr)
 
     # Preprocess image for model
-    processed_image = preprocess_image(image)
+    processed_image = preprocess_image(image_bgr)
 
     # Optional: Save processed image for debugging
     processed_image_to_save = Image.fromarray((processed_image[0, :, :, 0] * 255).astype(np.uint8))
@@ -68,9 +69,8 @@ def preprocess_image(image):
     - reshape to (1, 64, 64, 1)
     """
     # Convert to RGB NumPy array from PIL image
-    image_rgb = np.array(image.convert("RGB"))
 
-    h, w, _ = image_rgb.shape
+    h, w, _ = image.shape
     cx, cy = w // 2, h // 2
     half = 150
     x1 = max(0, cx - half)
@@ -78,16 +78,21 @@ def preprocess_image(image):
     x2 = min(w, cx + half)
     y2 = min(h, cy + half)
 
-    roi = image_rgb[y1:y2, x1:x2]
+    roi = image[y1:y2, x1:x2]
 
     # Pad to 300x300 if ROI is smaller
 
 
     # Convert to grayscale
-    roi_gray = cv2.cvtColor(roi, cv2.COLOR_RGB2GRAY)
+    roi_gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
+    
+    sobelx = cv2.Sobel(roi_gray, cv2.CV_64F, 1, 0, ksize=3) # Sobel along x-axis
+    sobely = cv2.Sobel(roi_gray, cv2.CV_64F, 0, 1, ksize=3) # Sobel along y-axis
 
+    magnitude = np.sqrt(sobelx**2 + sobely**2)
+    magnitude = cv2.convertScaleAbs(magnitude)  
     # Resize to model input
-    roi_resized = cv2.resize(roi_gray, (IMG_SIZE, IMG_SIZE))
+    roi_resized = cv2.resize(magnitude, (IMG_SIZE, IMG_SIZE))
 
     # Normalize and reshape
     normalized = roi_resized.astype("float32") / 255.0

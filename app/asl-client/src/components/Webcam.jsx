@@ -34,11 +34,7 @@ function WebCam() {
     }
 
     setError(null);
-    const link = document.createElement("a");
-    link.href = imageSrc;
-    const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-    link.download = `capture_${timestamp}.jpg`; // You can customize the filename
-    link.click();
+    
 
 
     const letter = await sendImageToServer(imageSrc);
@@ -66,9 +62,9 @@ function WebCam() {
         style={{
           position: "absolute",
           top: "calc(50% - 150px)",
-          left: "calc(50% - 150px)",
-          width: "300px",
-          height: "300px",
+          left: "calc(50% - 90px)",
+          width: "170px",
+          height: "170px",
           border: "3px solid lime",
           zIndex: 2,
           pointerEvents: "none",

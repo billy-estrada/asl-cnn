@@ -2,9 +2,10 @@ import cv2
 import os
 import time
 
-label = 'A'  # change this for each letter
-num_images = 500
-delay = 0.5  # seconds between captures
+label = 'Y'  # change this for each letter
+person = 'b'
+num_images = 250
+delay = 0.09  # seconds between captures
 
 save_dir = f'dataset/{label}'
 os.makedirs(save_dir, exist_ok=True)
@@ -46,7 +47,7 @@ while True:
         roi = frame[y1:y2, x1:x2]  # Extract ROI
         roi_gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)  # Convert to grayscale
         roi_resized = cv2.resize(roi_gray, (64, 64))      # Resize
-        cv2.imwrite(f"{save_dir}/{label}_{count}.jpg", roi_resized)
+        cv2.imwrite(f"{save_dir}/{label}_be_{person}_{count}.jpg", roi_resized)
         count += 1
         last_capture_time = time.time()
 

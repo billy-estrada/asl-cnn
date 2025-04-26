@@ -11,7 +11,7 @@ from flask_cors import CORS
 app = Flask(__name__, static_folder='static')
 CORS(app)
 
-MODEL_PATH = 'asl_model_v03.h5'
+MODEL_PATH = 'asl_model_v04.h5'
 IMG_SIZE = 64
 
 # Load your trained model

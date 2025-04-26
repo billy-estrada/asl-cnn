@@ -11,13 +11,13 @@ import cv2
 # Configuration
 IMG_SIZE = 64
 BATCH_SIZE = 32
-EPOCHS = 15
+EPOCHS = 200
 DATASET_PATH = '../dataset'
 MODEL_PATH = 'models/asl_model.h5'
 
+
 def sobel_preprocessing(img):
     img = img.astype(np.uint8)  
-    print(img.shape)
 
     sobelx = cv2.Sobel(img, cv2.CV_64F, 1, 0, ksize=3)
     sobely = cv2.Sobel(img, cv2.CV_64F, 0, 1, ksize=3)
@@ -92,7 +92,7 @@ model.compile(optimizer=Adam(), loss='categorical_crossentropy', metrics=['accur
 
 # 4. Training with Callbacks
 callbacks = [
-    EarlyStopping(patience=3, restore_best_weights=True),
+    EarlyStopping(patience=10, restore_best_weights=True),
     ModelCheckpoint(MODEL_PATH, save_best_only=True)
 ]
 

@@ -11,7 +11,7 @@ from flask_cors import CORS
 app = Flask(__name__, static_folder='static')
 CORS(app)
 
-MODEL_PATH = 'asl_model_v04.h5'
+MODEL_PATH = 'asl_model_v07.h5'
 IMG_SIZE = 64
 
 # Load your trained model
@@ -37,7 +37,7 @@ def predict():
 
     # Save raw uploaded image
     raw_image_path = os.path.join("./", f"raw_{timestamp}.jpg")
-    cv2.imwrite(raw_image_path, image_bgr)
+    # cv2.imwrite(raw_image_path, image_bgr)
 
     # Preprocess image for model
     processed_image = preprocess_image(image_bgr)
@@ -83,25 +83,45 @@ def preprocess_image(image):
     # Pad to 300x300 if ROI is smaller
 
 
+
     # Convert to grayscale
     roi_gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
     roi_resized = cv2.resize(roi_gray, (64, 64))   
 
-    roi_resized = roi_resized.astype(np.uint8)  
-
+    img = roi_resized.astype(np.uint8)  
     
-    sobelx = cv2.Sobel(roi_resized, cv2.CV_64F, 1, 0, ksize=3) # Sobel along x-axis
-    sobely = cv2.Sobel(roi_resized, cv2.CV_64F, 0, 1, ksize=3) # Sobel along y-axis
-
+    denoised = cv2.medianBlur(img, ksize=3)
+    
+    sobelx = cv2.Sobel(denoised, cv2.CV_64F, 1, 0, ksize=3)
+    sobely = cv2.Sobel(denoised, cv2.CV_64F, 0, 1, ksize=3)
     magnitude = np.sqrt(sobelx**2 + sobely**2)
-    magnitude = cv2.convertScaleAbs(magnitude)  
-    # Resize to model input
-
-    # Normalize and reshape
-    magnitude = magnitude.astype("float32") / 255.0
+    magnitude = cv2.convertScaleAbs(magnitude)
     
-    return np.expand_dims(magnitude, axis=-1)  # Adds the channel dimension
+    _, strong_edges = cv2.threshold(denoised, thresh=100, maxval=255, type=cv2.THRESH_BINARY)
+    result = cv2.bitwise_and(denoised, denoised, mask=strong_edges)
 
+    magnitude = result.astype("float32") / 255.0  # Scale back to 0-1
+
+    return np.expand_dims(magnitude, axis=-1) 
+
+def new_func(img):
+    img = img.astype(np.uint8)  
+    
+    denoised = cv2.medianBlur(img, ksize=3)
+    
+    sobelx = cv2.Sobel(denoised, cv2.CV_64F, 1, 0, ksize=3)
+    sobely = cv2.Sobel(denoised, cv2.CV_64F, 0, 1, ksize=3)
+    magnitude = np.sqrt(sobelx**2 + sobely**2)
+    magnitude = cv2.convertScaleAbs(magnitude)
+    
+    _, strong_edges = cv2.threshold(denoised, thresh=100, maxval=255, type=cv2.THRESH_BINARY)
+    result = cv2.bitwise_and(denoised, denoised, mask=strong_edges)
+    
+
+
+    magnitude = result.astype("float32") / 255.0  # Scale back to 0-1
+
+    return np.expand_dims(magnitude, axis=-1) 
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8000, debug=True)

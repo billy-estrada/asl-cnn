@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import Webcam from "react-webcam";
 
 async function sendImageToServer(imageSrc) {
@@ -22,31 +22,43 @@ async function sendImageToServer(imageSrc) {
 }
 
 function WebCam() {
-  const [predictedLetter, setPredictedLetter] = React.useState(null);
-  const [error, setError] = React.useState(null);
-  const webcamRef = React.useRef(null);
+  const webcamRef = useRef(null);
+  const [predictedLetter, setPredictedLetter] = useState(null);
+  const [error, setError] = useState(null);
+  const [isRunning, setIsRunning] = useState(false);
 
-  const capture = React.useCallback(async () => {
-    const imageSrc = webcamRef.current.getScreenshot();
+  const captureAndSend = useCallback(async () => {
+    const imageSrc = webcamRef.current?.getScreenshot();
     if (!imageSrc) {
-      setError("No image captured. Please try again.");
+      setError("No image captured.");
       return;
     }
 
     setError(null);
-    
-
-
     const letter = await sendImageToServer(imageSrc);
     if (letter) {
       setPredictedLetter(letter);
     } else {
-      setError("Prediction failed. Please try again.");
+      setError("Prediction failed.");
     }
-  }, [webcamRef]);
+  }, []);
+
+  useEffect(() => {
+    if (!isRunning) return;
+
+    const intervalId = setInterval(() => {
+      captureAndSend();
+    }, 2000); // every 2 seconds
+
+    return () => clearInterval(intervalId);
+  }, [isRunning, captureAndSend]);
+
 
   return (
     <div style={{ position: "relative", display: "inline-block" }}>
+
+    
+      <div style={{ marginTop: 10 }}>
       <Webcam
         audio={false}
         ref={webcamRef}
@@ -57,23 +69,37 @@ function WebCam() {
           facingMode: "user",
         }}
       />
+      <div style={{ height: 40, marginBottom: 10 }}>
+      {predictedLetter ? (
+        <h2 style={{ margin: 0 }}>Predicted Letter: {predictedLetter}</h2>
+      ) : error ? (
+        <h3 style={{ margin: 0, color: "red" }}>{error}</h3>
+      ) : (
+        <div style={{ height: 24 }} />  // Invisible spacer
+      )}
+    </div>
+        <button onClick={() => setIsRunning(true)} disabled={isRunning}>
+          Start
+        </button>
+        <button onClick={() => setIsRunning(false)} disabled={!isRunning}>
+          Stop
+        </button>
+      </div>
       {/* Centered Box Overlay */}
       <div
         style={{
           position: "absolute",
           top: "calc(50% - 150px)",
           left: "calc(50% - 90px)",
-          width: "170px",
-          height: "170px",
+          width: "180px",
+          height: "180px",
           border: "3px solid lime",
           zIndex: 2,
           pointerEvents: "none",
         }}
       />
       {/* Prediction / Error Display */}
-      {predictedLetter && <h2>Predicted Letter: {predictedLetter}</h2>}
-      {error && <h3 style={{ color: "red" }}>{error}</h3>}
-      <button onClick={capture}>Capture photo</button>
+
     </div>
   );
 }

@@ -2,7 +2,7 @@ import cv2
 import os
 import time
 
-label = 'Y'  # change this for each letter
+label = 'A'  # change this for each letter
 person = 'b'
 num_images = 250
 delay = 0.09  # seconds between captures

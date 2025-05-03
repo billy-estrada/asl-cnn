@@ -1,19 +1,21 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import Webcam from "react-webcam";
 
-const FRAME_BATCH_SIZE = 15;
+const FRAME_BATCH_SIZE = 5;
 const FRAME_INTERVAL_MS = 100;
 const COUNTDOWN_SECONDS = 3;
-const COOLDOWN_SECONDS = 5;
+const COOLDOWN_SECONDS = 3;
 
 
-async function sendImageToServer(imageSrc) {
-  const blob = await fetch(imageSrc).then((res) => res.blob());
+async function sendImageToServer(frames) {
   const formData = new FormData();
-  formData.append("image", blob);
+  for (let i = 0; i < frames.length; i++) {
+    const blob = await fetch(frames[i]).then((res) => res.blob());
+    formData.append("image", blob); // all under the same key "image"
+  }
 
   try {
-    const response = await fetch("http://localhost:8000/predict", {
+    const response = await fetch("http://localhost:8000/predict-batch", {
       method: "POST",
       body: formData,
     });
@@ -29,9 +31,11 @@ async function sendImageToServer(imageSrc) {
 
 function WebCam() {
   const webcamRef = useRef(null);
+  const frameBufferRef = useRef([]);
   const [predictedLetter, setPredictedLetter] = useState(null);
   const [error, setError] = useState(null);
   const [isRunning, setIsRunning] = useState(false);
+  const [countdown, setCountdown] = useState(null);
   const captureIntervalRef = useRef(null);
   const cycleTimeoutRef = useRef(null);
 
@@ -50,7 +54,7 @@ function WebCam() {
 
       try {
         setError(null);
-        const letter = await sendImageBatchToServer(framesToSend);
+        const letter = await sendImageToServer(framesToSend);
         if (letter) {
           setPredictedLetter(letter);
         } else {
@@ -64,13 +68,14 @@ function WebCam() {
       // Start cooldown before next cycle
       cycleTimeoutRef.current = setTimeout(() => {
         startCountdownAndCapture(); // restart after cooldown
-      }, COOLDOWN_MS);
+      }, COOLDOWN_SECONDS * 1000);
     }
   }, []);
 
   const startCountdownAndCapture = useCallback(() => {
     let secondsLeft = COUNTDOWN_SECONDS;
     setCountdown(secondsLeft);
+    setPredictedLetter(null);
 
     const countdownInterval = setInterval(() => {
       secondsLeft--;
@@ -89,7 +94,7 @@ function WebCam() {
 
   useEffect(() => {
     if (isRunning) {
-      captureAndSend();
+      startCountdownAndCapture();
     } else {
       clearInterval(captureIntervalRef.current);
       clearTimeout(cycleTimeoutRef.current);

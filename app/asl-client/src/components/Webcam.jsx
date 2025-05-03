@@ -1,6 +1,12 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import Webcam from "react-webcam";
 
+const FRAME_BATCH_SIZE = 15;
+const FRAME_INTERVAL_MS = 100;
+const COUNTDOWN_SECONDS = 3;
+const COOLDOWN_SECONDS = 5;
+
+
 async function sendImageToServer(imageSrc) {
   const blob = await fetch(imageSrc).then((res) => res.blob());
   const formData = new FormData();
@@ -26,31 +32,75 @@ function WebCam() {
   const [predictedLetter, setPredictedLetter] = useState(null);
   const [error, setError] = useState(null);
   const [isRunning, setIsRunning] = useState(false);
+  const captureIntervalRef = useRef(null);
+  const cycleTimeoutRef = useRef(null);
+
 
   const captureAndSend = useCallback(async () => {
     const imageSrc = webcamRef.current?.getScreenshot();
-    if (!imageSrc) {
-      setError("No image captured.");
-      return;
-    }
+    if (!imageSrc) return;
 
-    setError(null);
-    const letter = await sendImageToServer(imageSrc);
-    if (letter) {
-      setPredictedLetter(letter);
-    } else {
-      setError("Prediction failed.");
+    frameBufferRef.current.push(imageSrc);
+
+    if (frameBufferRef.current.length === FRAME_BATCH_SIZE) {
+      clearInterval(captureIntervalRef.current);
+
+      const framesToSend = [...frameBufferRef.current];
+      frameBufferRef.current = [];
+
+      try {
+        setError(null);
+        const letter = await sendImageBatchToServer(framesToSend);
+        if (letter) {
+          setPredictedLetter(letter);
+        } else {
+          setError("Prediction failed.");
+        }
+      } catch (err) {
+        console.error(err);
+        setError("Server error.");
+      }
+
+      // Start cooldown before next cycle
+      cycleTimeoutRef.current = setTimeout(() => {
+        startCountdownAndCapture(); // restart after cooldown
+      }, COOLDOWN_MS);
     }
   }, []);
 
+  const startCountdownAndCapture = useCallback(() => {
+    let secondsLeft = COUNTDOWN_SECONDS;
+    setCountdown(secondsLeft);
+
+    const countdownInterval = setInterval(() => {
+      secondsLeft--;
+      setCountdown(secondsLeft);
+      if (secondsLeft === 0) {
+        clearInterval(countdownInterval);
+        setCountdown(null);
+
+        // Start capturing frames
+        captureIntervalRef.current = setInterval(() => {
+          captureAndSend();
+        }, FRAME_INTERVAL_MS);
+      }
+    }, 1000);
+  }, [captureAndSend]);
+
   useEffect(() => {
-    if (!isRunning) return;
-
-    const intervalId = setInterval(() => {
+    if (isRunning) {
       captureAndSend();
-    }, 2000); // every 2 seconds
+    } else {
+      clearInterval(captureIntervalRef.current);
+      clearTimeout(cycleTimeoutRef.current);
+      setCountdown(null);
+      frameBufferRef.current = [];
+    }
 
-    return () => clearInterval(intervalId);
+    return () => {
+      clearInterval(captureIntervalRef.current);
+      clearTimeout(cycleTimeoutRef.current);
+    };
   }, [isRunning, captureAndSend]);
 
 
@@ -69,15 +119,11 @@ function WebCam() {
           facingMode: "user",
         }}
       />
-      <div style={{ height: 40, marginBottom: 10 }}>
-      {predictedLetter ? (
-        <h2 style={{ margin: 0 }}>Predicted Letter: {predictedLetter}</h2>
-      ) : error ? (
-        <h3 style={{ margin: 0, color: "red" }}>{error}</h3>
-      ) : (
-        <div style={{ height: 24 }} />  // Invisible spacer
-      )}
-    </div>
+      <div style={{ minHeight: "3em", marginTop: "1em", textAlign: "center" }}>
+        {countdown !== null && <h3>Capturing in: {countdown}</h3>}
+        {predictedLetter && <h2>Predicted Letter: {predictedLetter}</h2>}
+        {error && <p style={{ color: "red" }}>{error}</p>}
+      </div>
         <button onClick={() => setIsRunning(true)} disabled={isRunning}>
           Start
         </button>

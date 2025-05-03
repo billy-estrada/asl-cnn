@@ -7,6 +7,7 @@ import json
 import os
 from datetime import datetime
 from flask_cors import CORS
+import statistics
 
 app = Flask(__name__, static_folder='static')
 CORS(app)
@@ -43,7 +44,6 @@ def predict():
     processed_image = preprocess_image(image_bgr)
     processed_image = np.expand_dims(processed_image, axis=0)  # shape: (1, 64, 64, 1)
 
-    # Optional: Save processed image for debugging
     processed_image_to_save = Image.fromarray((processed_image[0, :, :, 0] * 255).astype(np.uint8))    
     processed_path = os.path.join("./", f"processed_{timestamp}.jpg")
     processed_image_to_save.save(processed_path)
@@ -58,6 +58,50 @@ def predict():
 
     print("Predicted letter:", predicted_letter)
     return jsonify({'letter': predicted_letter})
+
+@app.route("/predict-batch", methods=["POST"])
+def predict_batch():
+
+    with open("class_labels.json", "r") as f:
+        class_indices = json.load(f)
+
+    # Receive image from client
+    files = request.files.getlist("image")
+
+    results = []
+
+    for index, file in enumerate(files):
+        file_bytes = np.frombuffer(file.read(), np.uint8)
+        image_bgr = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
+
+        # Timestamp for file names
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+        # Save raw uploaded image
+        raw_image_path = os.path.join("./", f"raw_{timestamp}_{index}.jpg")
+        cv2.imwrite(raw_image_path, image_bgr)
+
+        # Preprocess image for model
+        processed_image = preprocess_image(image_bgr)
+        processed_image = np.expand_dims(processed_image, axis=0)  # shape: (1, 64, 64, 1)
+
+        # Optional: Save processed image for debugging
+        processed_image_to_save = Image.fromarray((processed_image[0, :, :, 0] * 255).astype(np.uint8))    
+        processed_path = os.path.join("./", f"processed_{timestamp}.jpg")
+        processed_image_to_save.save(processed_path)
+
+        # Predict
+        prediction = model.predict(processed_image)
+        predicted_index = np.argmax(prediction)
+
+        # Map index to label
+        class_labels = {v: k for k, v in class_indices.items()}
+        predicted_letter = class_labels[int(predicted_index)]
+        print("Predicted letter:", predicted_letter)
+        results.append(predicted_letter)
+            
+    mode_label = statistics.mode(results)
+    return jsonify({'letter': mode_label})
 
 
 def preprocess_image(image):

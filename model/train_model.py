@@ -22,6 +22,7 @@ OUTPUT_DIR = '../dataset_split'
 TRAIN_DIR = os.path.join(OUTPUT_DIR, 'train')
 VAL_DIR = os.path.join(OUTPUT_DIR, 'val')
 
+# logic to help split datasets by tagged identifier
 data = []
 for label in os.listdir(DATASET_PATH):
     label_path = os.path.join(DATASET_PATH, label)
@@ -65,7 +66,6 @@ def sobel_preprocessing(img):
     
     # result = cv2.bitwise_and(blurred, blurred, mask=thresh)
 
-
     magnitude = result.astype("float32") / 255.0  # Scale back to 0-1
 
     return np.expand_dims(magnitude, axis=-1)  # Adds the channel dimension
@@ -107,7 +107,7 @@ import matplotlib.pyplot as plt
 # Get one batch from the training generator
 images, labels = next(train_generator)
 
-# Plot the first 8 images
+# see post process images
 plt.figure(figsize=(12, 6))
 for i in range(30):
     plt.subplot(5, 6, i + 1)
@@ -116,7 +116,7 @@ for i in range(30):
 plt.suptitle('Sobel + Augmented Images from Generator')
 plt.show()
 
-# 2. Build the CNN Model
+# 2. build the CNN model
 model = Sequential([
     Conv2D(32, (3, 3), activation='relu', input_shape=(IMG_SIZE, IMG_SIZE, 1)),
     MaxPooling2D(2, 2),
@@ -130,10 +130,10 @@ model = Sequential([
     Dense(train_generator.num_classes, activation='softmax')
 ])
 
-# 3. Compile
+# 3. compile
 model.compile(optimizer=Adam(), loss='categorical_crossentropy', metrics=['accuracy'])
 
-# 4. Training with Callbacks
+# 4. stop after plateau
 callbacks = [
     EarlyStopping(patience=15, restore_best_weights=True),
     ModelCheckpoint(MODEL_PATH, save_best_only=True)

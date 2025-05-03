@@ -28,19 +28,17 @@ def predict():
     with open("class_labels.json", "r") as f:
         class_indices = json.load(f)
 
-    # Receive image from client
+    # unpack body
     file = request.files['image']
     file_bytes = np.frombuffer(file.read(), np.uint8)
     image_bgr = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
 
-    # Timestamp for file names
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
-    # Save raw uploaded image
-    raw_image_path = os.path.join("./", f"raw_{timestamp}.jpg")
+    # raw_image_path = os.path.join("./", f"raw_{timestamp}.jpg")
     # cv2.imwrite(raw_image_path, image_bgr)
 
-    # Preprocess image for model
+    # preprocess image for model
     processed_image = preprocess_image(image_bgr)
     processed_image = np.expand_dims(processed_image, axis=0)  # shape: (1, 64, 64, 1)
 
@@ -65,7 +63,7 @@ def predict_batch():
     with open("class_labels.json", "r") as f:
         class_indices = json.load(f)
 
-    # Receive image from client
+    # unpack body
     files = request.files.getlist("image")
 
     results = []
@@ -74,21 +72,19 @@ def predict_batch():
         file_bytes = np.frombuffer(file.read(), np.uint8)
         image_bgr = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
 
-        # Timestamp for file names
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
-        # Save raw uploaded image
-        raw_image_path = os.path.join("./", f"raw_{timestamp}_{index}.jpg")
-        cv2.imwrite(raw_image_path, image_bgr)
+        # Save image
+        # raw_image_path = os.path.join("./", f"raw_{timestamp}_{index}.jpg")
+        # cv2.imwrite(raw_image_path, image_bgr)
 
-        # Preprocess image for model
+        # preprocess image for model
         processed_image = preprocess_image(image_bgr)
         processed_image = np.expand_dims(processed_image, axis=0)  # shape: (1, 64, 64, 1)
 
-        # Optional: Save processed image for debugging
-        processed_image_to_save = Image.fromarray((processed_image[0, :, :, 0] * 255).astype(np.uint8))    
-        processed_path = os.path.join("./", f"processed_{timestamp}.jpg")
-        processed_image_to_save.save(processed_path)
+        # processed_image_to_save = Image.fromarray((processed_image[0, :, :, 0] * 255).astype(np.uint8))    
+        # processed_path = os.path.join("./", f"processed_{timestamp}.jpg")
+        # processed_image_to_save.save(processed_path)
 
         # Predict
         prediction = model.predict(processed_image)
@@ -148,24 +144,25 @@ def preprocess_image(image):
 
     return np.expand_dims(magnitude, axis=-1) 
 
-def new_func(img):
-    img = img.astype(np.uint8)  
+#testing with different processing techniques, thresholding, and orders.
+# def new_func(img):
+#     img = img.astype(np.uint8)  
     
-    denoised = cv2.medianBlur(img, ksize=3)
+#     denoised = cv2.medianBlur(img, ksize=3)
     
-    sobelx = cv2.Sobel(denoised, cv2.CV_64F, 1, 0, ksize=3)
-    sobely = cv2.Sobel(denoised, cv2.CV_64F, 0, 1, ksize=3)
-    magnitude = np.sqrt(sobelx**2 + sobely**2)
-    magnitude = cv2.convertScaleAbs(magnitude)
+#     sobelx = cv2.Sobel(denoised, cv2.CV_64F, 1, 0, ksize=3)
+#     sobely = cv2.Sobel(denoised, cv2.CV_64F, 0, 1, ksize=3)
+#     magnitude = np.sqrt(sobelx**2 + sobely**2)
+#     magnitude = cv2.convertScaleAbs(magnitude)
     
-    _, strong_edges = cv2.threshold(denoised, thresh=100, maxval=255, type=cv2.THRESH_BINARY)
-    result = cv2.bitwise_and(denoised, denoised, mask=strong_edges)
+#     _, strong_edges = cv2.threshold(denoised, thresh=100, maxval=255, type=cv2.THRESH_BINARY)
+#     result = cv2.bitwise_and(denoised, denoised, mask=strong_edges)
     
 
 
-    magnitude = result.astype("float32") / 255.0  # Scale back to 0-1
+#     magnitude = result.astype("float32") / 255.0  # Scale back to 0-1
 
-    return np.expand_dims(magnitude, axis=-1) 
+#     return np.expand_dims(magnitude, axis=-1) 
 
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8000, debug=True)
+# if __name__ == "__main__":
+#     app.run(host="0.0.0.0", port=8000, debug=True)

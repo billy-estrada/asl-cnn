@@ -136,7 +136,6 @@ function WebCam() {
           Stop
         </button>
       </div>
-      {/* Centered Box Overlay */}
       <div
         style={{
           position: "absolute",
@@ -149,7 +148,6 @@ function WebCam() {
           pointerEvents: "none",
         }}
       />
-      {/* Prediction / Error Display */}
 
     </div>
   );

@@ -5,8 +5,8 @@ import string
 
 person = 'bottom'
 images_per_letter = 10
-delay_between_images = 0.2  # seconds between each image
-delay_between_letters = 5.0  # seconds between letters (non-blocking)
+delay_between_images = 0.2 
+delay_between_letters = 5.0  
 
 # Letters A to Y excluding 'J'
 labels = ['G', 'H']
@@ -83,7 +83,6 @@ if started:
             cv2.imshow("Capturing", frame)
             cv2.waitKey(1)
 
-        # Show "Next" message for 2 seconds with live feed
         start_next_time = time.time()
         while time.time() - start_next_time < delay_between_letters:
             ret, frame = cap.read()

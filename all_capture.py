@@ -83,7 +83,7 @@ if started:
             cv2.imshow("Capturing", frame)
             cv2.waitKey(1)
 
-        # Show "Next" message for 2 seconds with live feed
+        # Next
         start_next_time = time.time()
         while time.time() - start_next_time < delay_between_letters:
             ret, frame = cap.read()

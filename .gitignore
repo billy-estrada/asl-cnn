@@ -185,3 +185,8 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
+
+*.jpg
+dataset_old/
+dataset_split/
+dataset/

@@ -15,7 +15,6 @@ CORS(app)
 MODEL_PATH = 'asl_model_v07.h5'
 IMG_SIZE = 64
 
-# Load your trained model
 model = tf.keras.models.load_model(MODEL_PATH)
 
 @app.route('/api/hello')
@@ -120,11 +119,10 @@ def preprocess_image(image):
     y2 = min(h, cy + half)
 
     roi = image[y1:y2, x1:x2]
-    # Pad to 300x300 if ROI is smaller
 
 
 
-    # Convert to grayscale
+    # convert to grayscale
     roi_gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
     roi_resized = cv2.resize(roi_gray, (64, 64))   
 

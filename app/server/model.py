@@ -119,10 +119,11 @@ def preprocess_image(image):
     y2 = min(h, cy + half)
 
     roi = image[y1:y2, x1:x2]
+    # Pad to 300x300 if ROI is smaller
 
 
 
-    # convert to grayscale
+    # Convert to grayscale
     roi_gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
     roi_resized = cv2.resize(roi_gray, (64, 64))   
 
@@ -142,7 +143,6 @@ def preprocess_image(image):
 
     return np.expand_dims(magnitude, axis=-1) 
 
-#testing with different processing techniques, thresholding, and orders.
 # def new_func(img):
 #     img = img.astype(np.uint8)  
     
@@ -162,5 +162,5 @@ def preprocess_image(image):
 
 #     return np.expand_dims(magnitude, axis=-1) 
 
-# if __name__ == "__main__":
-#     app.run(host="0.0.0.0", port=8000, debug=True)
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=8000, debug=True)
